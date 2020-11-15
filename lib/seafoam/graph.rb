@@ -7,14 +7,17 @@ module Seafoam
     def initialize(props = nil)
       @props = props || {}
       @nodes = {}
+      @next_id = 0
       @edges = []
     end
 
     # Create a node.
-    def create_node(id, props = nil)
+    def create_node(id = nil, props = nil)
+      id ||= @next_id
       props ||= {}
       node = Node.new(id, props)
       @nodes[id] = node
+      @next_id = [@next_id, id + 1].max
       node
     end
 

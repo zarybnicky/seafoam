@@ -125,7 +125,7 @@ module Seafoam
           end
 
           # That's our label.
-          node.props[:label] = label
+          node.props[:label] ||= label
 
           # Set the :kind property.
           if node_class.start_with?('org.graalvm.compiler.nodes.calc.') ||

@@ -99,6 +99,8 @@ module Seafoam
         # from a shaded node.
         next if edge.to.props[:hidden] && edge.from.props[:spotlight] != 'shaded'
 
+        next if edge.props[:hidden]
+
         write_edge inline_attrs, edge
       end
     end

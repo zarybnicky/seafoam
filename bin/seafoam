@@ -13,6 +13,7 @@ begin
   commands = Seafoam::Commands.new($stdout, config)
   commands.seafoam(*ARGV)
 rescue StandardError => e
+  raise e
   if $DEBUG
     # Re-raise the exception so the user sees it, if debugging is
     # enabled (ruby -d).
