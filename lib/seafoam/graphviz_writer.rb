@@ -32,17 +32,22 @@ module Seafoam
       # We're going to build up a hash of Graphviz drawing attributes.
       attrs = {}
 
-      # The node is hidden, and it's not going to be inlined above any
-      # other node.
       if node.props[:hidden] && !node.props[:inlined]
-        # If the node has any adjacent nodes that are not hidden, and are
-        # shaded, then we need to declare the node but make it invisible so
-        # the edge appears, pointing off into space, but the node does not.
+        # The node is hidden, and it's not going to be inlined above any
+        # other node. If the node has any adjacent nodes that are not hidden,
+        # and are shaded, then we need to declare the node but make it invisible
+        # so the edge appears, pointing off into space, but the node does not.
         if node.adjacent.any? { |a| !a.props[:hidden] && a.props[:spotlight] == 'shaded' }
           attrs[:style] = 'invis'
           attrs[:label] = ''
           @stream.puts "  node#{node.id} #{write_attrs(attrs)};"
         end
+      elsif node.props[:blackhole]
+        attrs[:shape] = 'circle'
+        attrs[:style] = 'filled'
+        attrs[:color] = 'black'
+        attrs[:label] = ''
+        @stream.puts "  node#{node.id} #{write_attrs(attrs)};"
       else
         # This is a visible node.
 
@@ -140,28 +145,30 @@ module Seafoam
       # Does this edge come from an inlined node?
 
       if edge.from.props[:inlined]
-        # An inlined edge is drawn as a new version of the from-node and an
-        # edge from that new version directly to the to-node. With only one
-        # user it's a short edge and the from-node is show directly above the
-        # to-node.
+        unless edge.to.props[:blackhole]
+          # An inlined edge is drawn as a new version of the from-node and an
+          # edge from that new version directly to the to-node. With only one
+          # user it's a short edge and the from-node is show directly above the
+          # to-node.
 
-        if edge.to.props[:spotlight] == 'shaded'
-          # Draw inlined edges to shaded nodes as invisible.
-          node_attrs = { label: '', style: 'invis' }
-        else
-          # Get attributes from when we went through nodes earlier.
-          node_attrs = inline_attrs[edge.from.id]
+          if edge.to.props[:spotlight] == 'shaded'
+            # Draw inlined edges to shaded nodes as invisible.
+            node_attrs = { label: '', style: 'invis' }
+          else
+            # Get attributes from when we went through nodes earlier.
+            node_attrs = inline_attrs[edge.from.id]
+          end
+
+          # Inlined nodes skip the arrow for simplicity.
+          attrs[:arrowhead] = 'none'
+          attrs[:fontsize] = '8'
+
+          # Declare a new node just for this user.
+          @stream.puts "  inline#{edge.from.id}x#{edge.to.id} #{write_attrs(node_attrs)};"
+
+          # Declare the edge.
+          @stream.puts "  inline#{edge.from.id}x#{edge.to.id} -> node#{edge.to.id} #{write_attrs(attrs)};"
         end
-
-        # Inlined nodes skip the arrow for simplicity.
-        attrs[:arrowhead] = 'none'
-        attrs[:fontsize] = '8'
-
-        # Declare a new node just for this user.
-        @stream.puts "  inline#{edge.from.id}x#{edge.to.id} #{write_attrs(node_attrs)};"
-
-        # Declare the edge.
-        @stream.puts "  inline#{edge.from.id}x#{edge.to.id} -> node#{edge.to.id} #{write_attrs(attrs)};"
       else
         # Declare the edge.
         @stream.puts "  node#{edge.from.id} -> node#{edge.to.id} #{write_attrs(attrs)};"
