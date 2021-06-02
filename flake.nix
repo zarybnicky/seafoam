@@ -8,14 +8,21 @@
     };
   in {
     overlay = prev: final: {
-      seafoam = final.bundlerApp {
+      seafoam = final.stdenv.mkDerivation rec {
+        name = "${pname}-${version}";
         pname = "seafoam";
-        gemfile = ./Gemfile;
-        lockfile = ./Gemfile.lock;
-        gemset = ./gemset.nix;
-        exes = ["seafoam"];
-        buildInputs = [final.makeWrapper];
-        postBuild = "wrapProgram $out/bin/seafoam --prefix PATH : ${final.lib.makeBinPath [ final.graphviz ]}";
+        version = (import ./gemset.nix).seafoam.version;
+        env = final.bundlerEnv {
+          pname = "seafoam";
+          gemdir = ./.;
+          exes = ["seafoam"];
+        };
+        nativeBuildInputs = [ final.makeWrapper ];
+        phases = [ "installPhase" ];
+        installPhase = ''
+          mkdir -p $out/bin
+          makeWrapper ${env}/bin/seafoam $out/bin/seafoam --prefix PATH : ${final.lib.makeBinPath [ final.graphviz ]}
+        '';
       };
     };
     packages.x86_64-linux = { inherit (pkgs) seafoam; };
